@@ -9,6 +9,7 @@ import { contentRouter } from './modules/content/content.routes.js';
 import { invoicesRouter, transactionsRouter } from './modules/finance/finance.routes.js';
 import { analyticsRouter } from './modules/analytics/analytics.routes.js';
 import { aiRouter } from './modules/ai/ai.routes.js';
+import { alertsRouter } from './modules/alerts/alerts.routes.js';
 import { youtubeRouter } from './modules/integrations/youtube/youtube.routes.js';
 import { errorHandler, notFoundHandler } from './middleware/error.middleware.js';
 
@@ -32,6 +33,7 @@ export function createApp() {
   app.use('/api/transactions', transactionsRouter);
   app.use('/api/dashboard', analyticsRouter);
   app.use('/api/ai', aiRouter);
+  app.use('/api/alerts', alertsRouter);
   app.use('/api/integrations/youtube', youtubeRouter);
 
   app.use(notFoundHandler);
