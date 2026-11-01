@@ -12,6 +12,9 @@ import {
   Plus,
   RefreshCw,
   TrendingUp,
+  Users,
+  Video,
+  Eye,
   Wallet,
 } from 'lucide-react';
 import {
@@ -30,6 +33,7 @@ import { Button } from '../components/ui/button.jsx';
 import { EmptyState, ErrorState } from '../components/feedback/empty-state.jsx';
 import { Skeleton } from '../components/feedback/skeleton.jsx';
 import { formatDate, formatMoney } from '../utils/format.js';
+import { useAuth } from '../features/auth/AuthProvider.jsx';
 
 const chartColors = {
   success: 'var(--success)',
@@ -52,9 +56,22 @@ function compactMoney(value, currency) {
 }
 
 export function DashboardPage() {
+  const { user } = useAuth();
   const query = useQuery({
     queryKey: ['dashboard'],
     queryFn: () => api.get('/api/dashboard/summary'),
+  });
+  const youtubeConnectionQuery = useQuery({
+    queryKey: ['youtube-connection', user?.id],
+    queryFn: () => api.get('/api/integrations/youtube'),
+    enabled: Boolean(user?.id),
+  });
+  const youtubeConnection = youtubeConnectionQuery.data?.data;
+  const youtubeConnected = youtubeConnection?.connected === true;
+  const youtubeStatisticsQuery = useQuery({
+    queryKey: ['youtube-statistics', user?.id],
+    queryFn: () => api.get('/api/integrations/youtube/stats'),
+    enabled: Boolean(user?.id) && youtubeConnected,
   });
 
   if (query.isLoading) return <DashboardSkeleton />;
@@ -143,6 +160,12 @@ export function DashboardPage() {
           tone="accent-secondary"
         />
       </section>
+
+      <YouTubeDashboardOverview
+        connectionQuery={youtubeConnectionQuery}
+        statisticsQuery={youtubeStatisticsQuery}
+        connected={youtubeConnected}
+      />
 
       {financials.excludedOtherCurrencyCount > 0 ? (
         <div
@@ -390,6 +413,135 @@ export function DashboardPage() {
       </section>
     </div>
   );
+}
+
+function YouTubeDashboardOverview({ connectionQuery, statisticsQuery, connected }) {
+  const channel = statisticsQuery.data?.data?.channel || connectionQuery.data?.data?.channel;
+  const statistics = statisticsQuery.data?.data?.statistics;
+
+  return (
+    <Card className="p-4 sm:p-5">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex min-w-0 items-center gap-3">
+          <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-accent/10 text-accent">
+            <Video size={18} />
+          </span>
+          <div className="min-w-0">
+            <h3 className="text-sm font-semibold text-ink">YouTube channel</h3>
+            <p className="truncate text-xs text-slate-500">
+              {connected ? channel?.title || 'Connected channel' : 'Optional channel insights'}
+            </p>
+          </div>
+        </div>
+
+        <Link
+          to="/youtube"
+          className="inline-flex shrink-0 items-center gap-1 self-start text-xs font-semibold text-accent hover:underline sm:self-center"
+        >
+          {connected ? 'Open YouTube Insights' : 'Connect YouTube'}
+          <ArrowRight size={14} />
+        </Link>
+      </div>
+
+      {connectionQuery.isLoading ? (
+        <div
+          className="mt-4 grid gap-2 sm:grid-cols-3"
+          aria-label="Loading YouTube overview"
+          aria-busy="true"
+        >
+          <Skeleton className="h-14" />
+          <Skeleton className="h-14" />
+          <Skeleton className="h-14" />
+        </div>
+      ) : connectionQuery.isError ? (
+        <p role="status" className="mt-3 text-xs text-slate-500">
+          YouTube overview is temporarily unavailable. Your dashboard data is unaffected.{' '}
+          <Link to="/youtube" className="font-semibold text-accent hover:underline">
+            View connection
+          </Link>
+        </p>
+      ) : !connected ? (
+        <p className="mt-3 text-xs text-slate-500">
+          Connect YouTube to see your channel statistics here. No statistics are shown until you connect.
+        </p>
+      ) : statisticsQuery.isLoading ? (
+        <div
+          className="mt-4 grid gap-2 sm:grid-cols-3"
+          aria-label="Loading YouTube statistics"
+          aria-busy="true"
+        >
+          <Skeleton className="h-14" />
+          <Skeleton className="h-14" />
+          <Skeleton className="h-14" />
+        </div>
+      ) : statisticsQuery.isError ? (
+        <YouTubeStatisticsNotice error={statisticsQuery.error} />
+      ) : statisticsQuery.data?.data ? (
+        <div className="mt-4 grid gap-2 sm:grid-cols-3">
+          <YouTubeStat
+            icon={Users}
+            label="Subscribers"
+            value={
+              statistics?.hiddenSubscriberCount
+                ? 'Hidden'
+                : formatYouTubeCount(statistics?.subscriberCount)
+            }
+          />
+          <YouTubeStat icon={Video} label="Videos" value={formatYouTubeCount(statistics?.videoCount)} />
+          <YouTubeStat icon={Eye} label="Total views" value={formatYouTubeCount(statistics?.viewCount)} />
+        </div>
+      ) : (
+        <p role="status" className="mt-3 text-xs text-slate-500">
+          Channel statistics are unavailable.{' '}
+          <Link to="/youtube" className="font-semibold text-accent hover:underline">
+            Open YouTube Insights
+          </Link>
+        </p>
+      )}
+    </Card>
+  );
+}
+
+function YouTubeStat({ icon: Icon, label, value }) {
+  return (
+    <div className="flex min-w-0 items-center gap-3 rounded-xl border border-line bg-panel/70 px-3 py-2.5">
+      <span className="shrink-0 rounded-lg bg-accent/10 p-2 text-accent">
+        <Icon size={15} />
+      </span>
+      <div className="min-w-0">
+        <p className="text-[11px] text-slate-500">{label}</p>
+        <p className="truncate text-sm font-semibold text-ink">{value}</p>
+      </div>
+    </div>
+  );
+}
+
+function YouTubeStatisticsNotice({ error }) {
+  let message = 'YouTube statistics are temporarily unavailable.';
+  if (error?.code === 'YOUTUBE_REAUTH_REQUIRED') {
+    message = 'YouTube authorization expired or was revoked. Reconnect from YouTube Insights.';
+  } else if (error?.code === 'YOUTUBE_QUOTA_EXCEEDED') {
+    message = 'YouTube API quota reached. Try again later from YouTube Insights.';
+  } else if (error?.code === 'YOUTUBE_CHANNEL_NOT_FOUND') {
+    message = 'No YouTube channel was returned for the connected account.';
+  } else if (error?.code === 'YOUTUBE_NOT_CONNECTED') {
+    message = 'The saved YouTube connection needs attention.';
+  }
+
+  return (
+    <p role="status" className="mt-3 text-xs text-slate-500">
+      {message}{' '}
+      <Link to="/youtube" className="font-semibold text-accent hover:underline">
+        View YouTube Insights
+      </Link>
+    </p>
+  );
+}
+
+function formatYouTubeCount(value) {
+  if (value === null || value === undefined || value === '') return 'Unavailable';
+  const count = Number(value);
+  return Number.isFinite(count) ? new Intl.NumberFormat().format(count) : 'Unavailable';
 }
 
 function MetricCard({ label, value, detail, icon: Icon, tone }) {
