@@ -44,6 +44,15 @@ export async function updateInvoice(supabase, userId, id, payload) {
   return data;
 }
 
+export async function markInvoicePaid(supabase, id) {
+  const { data, error } = await supabase.rpc('mark_invoice_paid', { p_invoice_id: id });
+  throwIfDbError(error, 'Unable to mark invoice paid', {
+    operation: 'mark_invoice_paid',
+    table: 'invoices',
+  });
+  return data;
+}
+
 export async function findIncomeForInvoice(supabase, userId, invoiceId) {
   const { data, error } = await supabase
     .from('transactions')

@@ -14,4 +14,9 @@ describe('unauthorized access', () => {
     const res = await request(app).get('/api/dashboard/summary');
     expect(res.status).toBe(401);
   });
+
+  it('rejects AI recommendations without a token', async () => {
+    const res = await request(app).get('/api/ai/recommendations');
+    expect(res.status).toBe(401);
+  });
 });

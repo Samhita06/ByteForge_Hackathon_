@@ -8,44 +8,46 @@ export function listInvoices(supabase, user, query) {
 
 export async function createInvoice(supabase, user, payload) {
   await collabRepo.getCollaboration(supabase, user.id, payload.collaboration_id);
-  const invoice = await repo.createInvoice(supabase, user.id, payload);
-  if (invoice.status === 'paid') {
-    return ensurePaymentTransaction(supabase, user, invoice);
+  const invoice = await repo.createInvoice(supabase, user.id, {
+    ...payload,
+    status: payload.status === 'paid' ? 'sent' : payload.status,
+  });
+  if (payload.status === 'paid') {
+    const paid = await repo.markInvoicePaid(supabase, invoice.id);
+    if (!paid) throw Errors.notFound('Invoice not found');
+    return paid;
   }
   return invoice;
 }
 
 export async function updateInvoice(supabase, user, id, payload) {
-  const current = await repo.getInvoice(supabase, user.id, id);
-  const nextStatus = payload.status ?? current.status;
-  if (nextStatus === 'paid' && !payload.paid_at) {
-    payload.paid_at = new Date().toISOString();
+  if (payload.status === 'paid') {
+    if (Object.keys(payload).some((key) => key !== 'status')) {
+      throw Errors.validation('Mark an invoice paid separately from editing invoice details.');
+    }
+    const paid = await repo.markInvoicePaid(supabase, id);
+    if (!paid) throw Errors.notFound('Invoice not found');
+    return paid;
   }
-  if (nextStatus !== 'paid') {
-    payload.paid_at = payload.paid_at ?? null;
+
+  const current = await repo.getInvoice(supabase, user.id, id);
+  if (current.status === 'paid') {
+    if (payload.status && payload.status !== 'paid') {
+      throw Errors.validation('A paid invoice cannot be moved back to an unpaid status.');
+    }
+    if (payload.paid_at !== undefined && payload.paid_at !== current.paid_at) {
+      throw Errors.validation('Payment date cannot be changed after an invoice is paid.');
+    }
+    if (
+      (payload.amount !== undefined && Number(payload.amount) !== Number(current.amount)) ||
+      (payload.currency !== undefined && payload.currency !== current.currency)
+    ) {
+      throw Errors.validation('Amount and currency cannot be changed after an invoice is paid.');
+    }
   }
   const updated = await repo.updateInvoice(supabase, user.id, id, payload);
   if (!updated) throw Errors.notFound('Invoice not found');
-  if (updated.status === 'paid') {
-    await ensurePaymentTransaction(supabase, user, updated);
-  }
   return updated;
-}
-
-async function ensurePaymentTransaction(supabase, user, invoice) {
-  const existing = await repo.findIncomeForInvoice(supabase, user.id, invoice.id);
-  if (existing) return invoice;
-  await repo.createTransaction(supabase, user.id, {
-    type: 'income',
-    amount: invoice.amount,
-    currency: invoice.currency,
-    category: 'invoice_payment',
-    transaction_date: (invoice.paid_at || new Date().toISOString()).slice(0, 10),
-    description: `Payment for invoice ${invoice.invoice_number}`,
-    collaboration_id: invoice.collaboration_id,
-    invoice_id: invoice.id,
-  });
-  return invoice;
 }
 
 export function listTransactions(supabase, user, query) {

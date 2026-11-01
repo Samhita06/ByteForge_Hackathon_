@@ -64,11 +64,11 @@ export async function createRecommendations(supabase, user) {
 export async function latestRecommendation(supabase, userId) {
   const { data, error } = await supabase
     .from('ai_recommendations')
-    .select('*')
+    .select('recommendation')
     .eq('user_id', userId)
     .order('created_at', { ascending: false })
     .limit(1)
     .maybeSingle();
   throwIfDbError(error);
-  return data;
+  return data?.recommendation ?? null;
 }
