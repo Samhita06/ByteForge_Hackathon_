@@ -1,0 +1,17 @@
+node_modules
+dist
+build
+coverage
+.env
+.env.local
+.env.*.local
+*.log
+.DS_Store
+Thumbs.db
+.vscode
+.idea
+*.tmp
+docs/_blueprint_extract.txt
+frontend/dist
+backend/coverage
+.vercel

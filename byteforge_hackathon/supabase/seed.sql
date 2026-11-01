@@ -1,0 +1,5 @@
+-- No auth users are created here. After you register a demo creator in the app,
+-- you can add records through the UI. Do not treat any seeded row as live
+-- social-platform or analytics data.
+--
+-- Sample records, if added later, must be labelled SAMPLE in descriptions.
