@@ -24,6 +24,22 @@ describe('auth middleware', () => {
     expect(res.body.error.code).toBe('UNAUTHORIZED');
   });
 
+  it('rejects malformed authorization headers before token verification', async () => {
+    const getUser = vi.fn();
+    const middleware = createAuthMiddleware({
+      getAuthClient: () => ({ auth: { getUser } }),
+      getUserClient: vi.fn(),
+    });
+    const app = buildApp(middleware);
+
+    for (const authorization of ['Bearer', 'Basic opaque-token']) {
+      const res = await request(app).get('/protected').set('Authorization', authorization);
+      expect(res.status).toBe(401);
+    }
+
+    expect(getUser).not.toHaveBeenCalled();
+  });
+
   it('rejects invalid tokens', async () => {
     const middleware = createAuthMiddleware({
       getAuthClient: () => ({
