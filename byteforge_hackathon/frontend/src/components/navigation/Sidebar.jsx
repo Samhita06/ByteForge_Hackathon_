@@ -1,5 +1,5 @@
 import { NavLink } from 'react-router-dom';
-import { CalendarDays, Handshake, LayoutDashboard, Settings, Sparkles, Wallet } from 'lucide-react';
+import { CalendarDays, Handshake, LayoutDashboard, Settings, Sparkles, Video, Wallet } from 'lucide-react';
 
 const links = [
   { to: '/', label: 'Dashboard', icon: LayoutDashboard },
@@ -7,6 +7,7 @@ const links = [
   { to: '/planner', label: 'Content Planner', icon: CalendarDays },
   { to: '/finance', label: 'Finance', icon: Wallet },
   { to: '/copilot', label: 'AI Copilot', icon: Sparkles },
+  { to: '/youtube', label: 'YouTube Insights', icon: Video },
   { to: '/settings', label: 'Settings', icon: Settings },
 ];
 

@@ -9,6 +9,7 @@ import { ContentPlannerPage } from '../pages/ContentPlannerPage.jsx';
 import { FinancePage } from '../pages/FinancePage.jsx';
 import { CopilotPage } from '../pages/CopilotPage.jsx';
 import { SettingsPage } from '../pages/SettingsPage.jsx';
+import { YouTubeInsightsPage } from '../pages/YouTubeInsightsPage.jsx';
 
 export const router = createBrowserRouter([
   {
@@ -29,6 +30,7 @@ export const router = createBrowserRouter([
           { path: '/planner', element: <ContentPlannerPage /> },
           { path: '/finance', element: <FinancePage /> },
           { path: '/copilot', element: <CopilotPage /> },
+          { path: '/youtube', element: <YouTubeInsightsPage /> },
           { path: '/settings', element: <SettingsPage /> },
         ],
       },
