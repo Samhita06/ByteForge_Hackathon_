@@ -1,15 +1,54 @@
-@import url('https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
 @import 'tailwindcss';
 
+:root,
+:root[data-theme='light'] {
+  color-scheme: light;
+  --app-bg: #f4f8fb;
+  --sidebar-bg: #ffffff;
+  --surface-card: #ffffff;
+  --surface-raised: #eaf2f7;
+  --text-primary: #0f172a;
+  --text-secondary: #64748b;
+  --text-tertiary: #94a3b8;
+  --border-subtle: #dce7ef;
+  --accent-primary: #0891b2;
+  --accent-secondary: #0d9488;
+  --accent-blue: #2563eb;
+  --success: #059669;
+  --warning: #b45309;
+  --danger: #e11d48;
+  --shadow-soft: 0 12px 32px rgb(15 23 42 / 5%);
+}
+
+:root[data-theme='dark'] {
+  color-scheme: dark;
+  --app-bg: #0b1220;
+  --sidebar-bg: #0f172a;
+  --surface-card: #111c2e;
+  --surface-raised: #17243a;
+  --text-primary: #f8fafc;
+  --text-secondary: #94a3b8;
+  --text-tertiary: #64748b;
+  --border-subtle: #24334a;
+  --accent-primary: #06b6d4;
+  --accent-secondary: #14b8a6;
+  --accent-blue: #60a5fa;
+  --success: #10b981;
+  --warning: #fbbf24;
+  --danger: #fb7185;
+  --shadow-soft: 0 16px 40px rgb(0 0 0 / 20%);
+}
+
 @theme {
-  --font-sans: 'Manrope', ui-sans-serif, system-ui, sans-serif;
-  --color-ink: #0b1220;
-  --color-ink-soft: #152033;
-  --color-panel: #f5f3ef;
-  --color-card: #fffdf9;
-  --color-line: #e4ddd2;
-  --color-accent: #6d4aff;
-  --color-accent-2: #9b7cff;
+  --font-sans: 'Inter', ui-sans-serif, system-ui, sans-serif;
+  --color-ink: var(--text-primary);
+  --color-ink-soft: var(--surface-raised);
+  --color-panel: var(--app-bg);
+  --color-card: var(--surface-card);
+  --color-line: var(--border-subtle);
+  --color-accent: var(--accent-primary);
+  --color-accent-2: var(--accent-secondary);
 }
 
 html,
@@ -18,14 +57,59 @@ body,
   min-height: 100%;
 }
 
+html {
+  background: var(--app-bg);
+}
+
 body {
   margin: 0;
-  background: #eef1f6;
-  color: #122033;
+  background: var(--app-bg);
+  color: var(--text-primary);
   font-family: var(--font-sans);
+  transition:
+    background-color 180ms ease,
+    color 180ms ease;
 }
 
 :focus-visible {
-  outline: 2px solid #6d4aff;
-  outline-offset: 2px;
+  outline: 2px solid var(--accent-primary);
+  outline-offset: 3px;
+}
+
+.bg-white {
+  background-color: var(--surface-card);
+}
+
+.bg-panel {
+  background-color: var(--app-bg);
+}
+
+.bg-card {
+  background-color: var(--surface-card);
+}
+
+.text-ink {
+  color: var(--text-primary);
+}
+
+.text-slate-300,
+.text-slate-400,
+.text-slate-500,
+.text-slate-600,
+.text-slate-700 {
+  color: var(--text-secondary);
+}
+
+.border-line {
+  border-color: var(--border-subtle);
+}
+
+.shadow-sm {
+  box-shadow: var(--shadow-soft);
+}
+
+select,
+input,
+textarea {
+  color-scheme: inherit;
 }

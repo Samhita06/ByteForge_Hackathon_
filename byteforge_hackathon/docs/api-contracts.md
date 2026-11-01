@@ -94,7 +94,7 @@ Required: `collaboration_id`, `invoice_number`, `amount`. Optional: `currency`, 
 
 ### PATCH `/api/invoices/:id`
 
-Setting `status` to `paid` sets `paid_at` and creates one income transaction if none exists for that invoice.
+Setting `status` to `paid` atomically sets `paid_at` and creates one income transaction from the stored invoice values if none exists. Send the payment status change separately from edits to other invoice fields.
 
 ## Analytics
 
@@ -103,6 +103,10 @@ Setting `status` to `paid` sets `paid_at` and creates one income transaction if 
 Returns counts, financials in `reporting_currency`, active collaborations, upcoming deliverables, scheduled content, activity, and deadlines.
 
 ## AI
+
+### GET `/api/ai/recommendations`
+
+Returns the authenticated user's latest saved recommendation payload as `{ data: { source, warning, recommendations, generatedAt } }`, or `{ data: null }` when none exists.
 
 ### POST `/api/ai/recommendations`
 

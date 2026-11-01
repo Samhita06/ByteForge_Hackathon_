@@ -2,10 +2,10 @@ import { cn } from '../../utils/cn.js';
 
 const variants = {
   primary:
-    'bg-accent text-white shadow-sm hover:bg-[#5b3cf0] disabled:opacity-60',
+    'bg-accent text-slate-950 shadow-sm hover:brightness-110 disabled:opacity-60',
   secondary:
     'bg-white text-ink border border-line hover:bg-panel disabled:opacity-60',
-  ghost: 'bg-transparent text-slate-200 hover:bg-white/10',
+  ghost: 'bg-transparent text-slate-500 hover:bg-panel hover:text-ink',
   danger: 'bg-rose-600 text-white hover:bg-rose-700',
 };
 

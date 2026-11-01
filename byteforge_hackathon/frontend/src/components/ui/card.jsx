@@ -6,15 +6,21 @@ export function Card({ className, ...props }) {
 
 export function Badge({ children, tone = 'slate' }) {
   const tones = {
-    slate: 'bg-slate-100 text-slate-700',
-    violet: 'bg-violet-100 text-violet-700',
-    green: 'bg-emerald-100 text-emerald-700',
-    amber: 'bg-amber-100 text-amber-800',
-    rose: 'bg-rose-100 text-rose-700',
-    blue: 'bg-sky-100 text-sky-800',
+    slate: 'text-secondary',
+    violet: 'accent-primary',
+    green: 'success',
+    amber: 'warning',
+    rose: 'danger',
+    blue: 'accent-blue',
   };
+  const color = tones[tone] || tones.slate;
+  const foreground = color === 'text-secondary' ? 'var(--text-secondary)' : `var(--${color})`;
+  const background = color === 'text-secondary' ? 'var(--surface-raised)' : `color-mix(in srgb, ${foreground} 12%, transparent)`;
   return (
-    <span className={cn('inline-flex rounded-full px-2.5 py-1 text-xs font-semibold', tones[tone] || tones.slate)}>
+    <span
+      className={cn('inline-flex rounded-full px-2.5 py-1 text-xs font-semibold')}
+      style={{ backgroundColor: background, color: foreground }}
+    >
       {children}
     </span>
   );
