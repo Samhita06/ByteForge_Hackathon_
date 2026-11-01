@@ -20,6 +20,11 @@ describe('unauthorized access', () => {
     expect(res.status).toBe(401);
   });
 
+  it('rejects alerts without a token', async () => {
+    const res = await request(app).get('/api/alerts');
+    expect(res.status).toBe(401);
+  });
+
   it('rejects YouTube integration API requests without a token', async () => {
     const responses = await Promise.all([
       request(app).post('/api/integrations/youtube/connect'),
