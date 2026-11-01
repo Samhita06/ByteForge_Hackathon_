@@ -1,6 +1,7 @@
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { useForm } from 'react-hook-form';
 import { useMutation, useQuery } from '@tanstack/react-query';
+import { useSearchParams } from 'react-router-dom';
 import { Check, Monitor, Moon, Palette, Sun, UserRound } from 'lucide-react';
 import { api } from '../services/apiClient.js';
 import { Card } from '../components/ui/card.jsx';
@@ -20,6 +21,8 @@ const themeOptions = [
 
 export function SettingsPage() {
   const toast = useToast();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const handledYoutubeCallback = useRef(false);
   const { user } = useAuth();
   const { preference, resolvedTheme, setThemePreference } = useTheme();
   const profile = useQuery({ queryKey: ['profile'], queryFn: () => api.get('/api/profile') });
@@ -33,6 +36,28 @@ export function SettingsPage() {
       reporting_currency: 'INR',
     },
   });
+
+  useEffect(() => {
+    const result = searchParams.get('youtube');
+    if (!result || handledYoutubeCallback.current) return;
+    handledYoutubeCallback.current = true;
+
+    const messages = {
+      connected: ['YouTube connected successfully', 'success'],
+      denied: ['YouTube access was cancelled. No connection was added.', 'info'],
+      no_channel: ['The authorized Google account has no YouTube channel.', 'error'],
+      invalid_state: ['The YouTube authorization expired or could not be verified. Please try again.', 'error'],
+      failed: ['YouTube authorization could not be completed. Please try again.', 'error'],
+      error: ['YouTube could not be connected right now. Please try again.', 'error'],
+    };
+    const [message, tone] = messages[result] || messages.error;
+    toast.push(message, tone);
+    setSearchParams((current) => {
+      const next = new URLSearchParams(current);
+      next.delete('youtube');
+      return next;
+    }, { replace: true });
+  }, [searchParams, setSearchParams, toast]);
 
   useEffect(() => {
     if (profile.data?.data) {

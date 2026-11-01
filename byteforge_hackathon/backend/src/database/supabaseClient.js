@@ -27,3 +27,20 @@ export function createAuthClient() {
     },
   });
 }
+
+export function createServiceClient() {
+  assertSupabaseConfigured();
+  if (!env.SUPABASE_SERVICE_ROLE_KEY) {
+    const error = new Error('YouTube server-side storage is not configured.');
+    error.status = 503;
+    error.code = 'SERVICE_UNAVAILABLE';
+    throw error;
+  }
+  return createClient(env.SUPABASE_URL, env.SUPABASE_SERVICE_ROLE_KEY, {
+    auth: {
+      persistSession: false,
+      autoRefreshToken: false,
+      detectSessionInUrl: false,
+    },
+  });
+}

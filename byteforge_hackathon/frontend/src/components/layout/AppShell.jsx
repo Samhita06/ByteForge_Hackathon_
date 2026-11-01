@@ -11,6 +11,7 @@ const pageTitles = {
   '/planner': 'Content Planner',
   '/finance': 'Finance',
   '/copilot': 'AI Creator Copilot',
+  '/youtube': 'YouTube Insights',
   '/settings': 'Settings',
 };
 
