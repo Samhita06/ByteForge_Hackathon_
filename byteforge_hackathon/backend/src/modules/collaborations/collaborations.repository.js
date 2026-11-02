@@ -24,6 +24,19 @@ export async function listCollaborations(supabase, userId, query) {
   return paginated(data || [], count, page);
 }
 
+export async function countActiveCollaborations(supabase, userId) {
+  const { count, error } = await supabase
+    .from('collaborations')
+    .select('id', { count: 'exact', head: true })
+    .eq('user_id', userId)
+    .eq('status', 'active');
+  throwIfDbError(error, 'Database request failed', {
+    operation: 'count_active_collaborations',
+    table: 'collaborations',
+  });
+  return count;
+}
+
 export async function getCollaboration(supabase, userId, id) {
   return requireOwnedRow(
     supabase.from('collaborations').select('*').eq('id', id).eq('user_id', userId),

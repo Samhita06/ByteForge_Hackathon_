@@ -22,6 +22,19 @@ export async function listContent(supabase, userId, query) {
   return paginated(data || [], count, page);
 }
 
+export async function countScheduledContent(supabase, userId) {
+  const { count, error } = await supabase
+    .from('content_items')
+    .select('id', { count: 'exact', head: true })
+    .eq('user_id', userId)
+    .eq('status', 'scheduled');
+  throwIfDbError(error, 'Database request failed', {
+    operation: 'count_scheduled_content',
+    table: 'content_items',
+  });
+  return count;
+}
+
 export async function getContent(supabase, userId, id) {
   return requireOwnedRow(
     supabase.from('content_items').select('*').eq('id', id).eq('user_id', userId),
