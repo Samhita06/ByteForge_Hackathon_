@@ -19,6 +19,21 @@ export async function listDeliverables(supabase, userId, query) {
   return paginated(data || [], count, page);
 }
 
+export async function countOverdueDeliverables(supabase, userId, today) {
+  const { count, error } = await supabase
+    .from('deliverables')
+    .select('id', { count: 'exact', head: true })
+    .eq('user_id', userId)
+    .in('status', ['pending', 'in_progress'])
+    .not('due_date', 'is', null)
+    .lt('due_date', today);
+  throwIfDbError(error, 'Database request failed', {
+    operation: 'count_overdue_deliverables',
+    table: 'deliverables',
+  });
+  return count;
+}
+
 export async function getDeliverable(supabase, userId, id) {
   return requireOwnedRow(
     supabase.from('deliverables').select('*').eq('id', id).eq('user_id', userId),

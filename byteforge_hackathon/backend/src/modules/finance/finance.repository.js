@@ -1,5 +1,8 @@
 import { throwIfDbError, requireOwnedRow } from '../../shared/utils/db.js';
 import { paginationQuery, paginated } from '../../shared/utils/pagination.js';
+import { AppError } from '../../shared/errors/AppError.js';
+
+const DASHBOARD_INVOICE_PAGE_SIZE = 500;
 
 export async function listInvoices(supabase, userId, query) {
   const page = paginationQuery(query);
@@ -132,7 +135,40 @@ export async function listAllTransactions(supabase, userId) {
 }
 
 export async function listAllInvoices(supabase, userId) {
-  const { data, error } = await supabase.from('invoices').select('*').eq('user_id', userId);
-  throwIfDbError(error, 'Database request failed', { operation: 'select_all_user_invoices', table: 'invoices' });
-  return data || [];
+  const rows = [];
+  let afterId = null;
+
+  while (true) {
+    let request = supabase
+      .from('invoices')
+      .select('id, invoice_number, amount, currency, status, paid_at, created_at, updated_at')
+      .eq('user_id', userId)
+      .order('id', { ascending: true })
+      .limit(DASHBOARD_INVOICE_PAGE_SIZE);
+    if (afterId) request = request.gt('id', afterId);
+
+    const { data, error } = await request;
+    throwIfDbError(error, 'Database request failed', {
+      operation: 'select_all_user_invoices',
+      table: 'invoices',
+    });
+    if (!Array.isArray(data) || data.length > DASHBOARD_INVOICE_PAGE_SIZE) {
+      throw new AppError('Database request failed', { status: 502, code: 'DATABASE_ERROR' });
+    }
+
+    for (const row of data) {
+      if (
+        typeof row.id !== 'string' ||
+        row.id.length === 0 ||
+        (afterId && row.id <= afterId)
+      ) {
+        throw new AppError('Database request failed', { status: 502, code: 'DATABASE_ERROR' });
+      }
+      afterId = row.id;
+      rows.push(row);
+    }
+    if (data.length < DASHBOARD_INVOICE_PAGE_SIZE) break;
+  }
+
+  return rows;
 }
