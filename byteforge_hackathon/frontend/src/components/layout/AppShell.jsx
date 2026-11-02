@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Link, Outlet, useLocation } from 'react-router-dom';
 import { ChevronDown, Menu, Monitor, Moon, PanelLeftClose, PanelLeftOpen, Sun, X } from 'lucide-react';
 import { Sidebar } from '../navigation/Sidebar.jsx';
+import { NotificationCenter } from '../navigation/NotificationCenter.jsx';
 import { useAuth } from '../../features/auth/AuthProvider.jsx';
 import { useTheme } from '../../app/theme-context.js';
 
@@ -86,6 +87,7 @@ export function AppShell() {
             </div>
 
             <div className="flex shrink-0 items-center gap-2 sm:gap-3">
+              {user?.id ? <NotificationCenter key={user.id} userId={user.id} /> : null}
               <label className="flex items-center gap-2 rounded-xl border border-line bg-card px-2.5 py-2 text-slate-500 transition hover:bg-panel">
                 <ThemeIcon size={16} aria-hidden="true" />
                 <span className="sr-only">Theme preference</span>

@@ -2,6 +2,25 @@ import { throwIfDbError } from '../../shared/utils/db.js';
 
 const CATEGORY_QUERY_LIMIT = 50;
 
+export async function listUpcomingCollaborationDeadlines(supabase, userId, today, endDateExclusive) {
+  const { data, error } = await supabase
+    .from('collaborations')
+    .select('id, brand_name, campaign_name, deadline')
+    .eq('user_id', userId)
+    .eq('status', 'active')
+    .not('deadline', 'is', null)
+    .gte('deadline', today)
+    .lt('deadline', endDateExclusive)
+    .order('deadline', { ascending: true })
+    .order('id', { ascending: true })
+    .limit(CATEGORY_QUERY_LIMIT);
+  throwIfDbError(error, 'Database request failed', {
+    operation: 'select_upcoming_collaboration_deadlines',
+    table: 'collaborations',
+  });
+  return data || [];
+}
+
 export async function listOverdueDeliverables(supabase, userId, today) {
   const { data, error } = await supabase
     .from('deliverables')
