@@ -80,6 +80,78 @@ function createSupabase(rowsByTable, errorsByTable = {}) {
 }
 
 describe('alerts repository', () => {
+  it('queries only the authenticated user for active collaboration deadlines in range', async () => {
+    const supabase = createSupabase({
+      collaborations: [
+        {
+          id: 'soon',
+          brand_name: 'Brand A',
+          campaign_name: 'Launch',
+          deadline: '2026-11-05',
+          user_id: 'user-a',
+          status: 'active',
+        },
+        {
+          id: 'too-late',
+          brand_name: 'Brand A',
+          campaign_name: 'Later',
+          deadline: '2026-11-06',
+          user_id: 'user-a',
+          status: 'active',
+        },
+        {
+          id: 'draft',
+          brand_name: 'Brand A',
+          campaign_name: 'Draft',
+          deadline: '2026-11-04',
+          user_id: 'user-a',
+          status: 'draft',
+        },
+        {
+          id: 'other-user',
+          brand_name: 'Private',
+          campaign_name: 'Private',
+          deadline: '2026-11-04',
+          user_id: 'user-b',
+          status: 'active',
+        },
+        {
+          id: 'no-deadline',
+          brand_name: 'Brand A',
+          campaign_name: 'No date',
+          deadline: null,
+          user_id: 'user-a',
+          status: 'active',
+        },
+      ],
+    });
+
+    await expect(
+      repository.listUpcomingCollaborationDeadlines(supabase, 'user-a', '2026-11-02', '2026-11-06'),
+    ).resolves.toEqual([
+      {
+        id: 'soon',
+        brand_name: 'Brand A',
+        campaign_name: 'Launch',
+        deadline: '2026-11-05',
+      },
+    ]);
+    expect(supabase.queries[0]).toMatchObject({
+      table: 'collaborations',
+      columns: 'id, brand_name, campaign_name, deadline',
+      limit: 50,
+    });
+    expect(supabase.queries[0].filters).toEqual(
+      expect.arrayContaining([
+        ['eq', 'user_id', 'user-a'],
+        ['eq', 'status', 'active'],
+        ['not', 'deadline', 'is', null],
+        ['gte', 'deadline', '2026-11-02'],
+        ['lt', 'deadline', '2026-11-06'],
+      ]),
+    );
+  });
+
   it('queries only the authenticated user and qualifying deliverables', async () => {
     const supabase = createSupabase({
       deliverables: [

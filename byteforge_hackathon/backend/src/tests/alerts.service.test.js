@@ -4,11 +4,13 @@ import { createAlertsService } from '../modules/alerts/alerts.service.js';
 const userId = 'user-creator';
 
 function createRepository({
+  collaborations = [],
   deliverables = [],
   content = [],
   invoices = [],
 } = {}) {
   return {
+    listUpcomingCollaborationDeadlines: vi.fn().mockResolvedValue(collaborations),
     listOverdueDeliverables: vi.fn().mockResolvedValue(deliverables),
     listUpcomingContent: vi.fn().mockResolvedValue(content),
     listOverdueInvoices: vi.fn().mockResolvedValue(invoices),
@@ -16,8 +18,16 @@ function createRepository({
 }
 
 describe('alerts service', () => {
-  it('uses UTC date boundaries and maps the three supported categories', async () => {
+  it('uses UTC date boundaries and maps collaboration deadlines and existing categories', async () => {
     const repository = createRepository({
+      collaborations: [
+        {
+          id: 'co1',
+          brand_name: 'Acme',
+          campaign_name: 'Spring launch',
+          deadline: '2026-11-04',
+        },
+      ],
       deliverables: [{ id: 'd1', title: 'Send draft', due_date: '2026-11-01' }],
       content: [{ id: 'c1', title: 'Publish short', scheduled_date: '2026-11-09' }],
       invoices: [{ id: 'i1', invoice_number: 'BF-42', due_date: '2026-10-30' }],
@@ -47,6 +57,15 @@ describe('alerts service', () => {
         date: '2026-11-01',
       },
       {
+        id: 'collaboration:co1',
+        type: 'collaboration_deadline',
+        severity: 'medium',
+        title: 'Collaboration deadline approaching',
+        message: 'Spring launch with Acme is due within 3 days.',
+        relatedRecordId: 'co1',
+        date: '2026-11-04',
+      },
+      {
         id: 'content:c1',
         type: 'content_upcoming',
         severity: 'medium',
@@ -56,6 +75,12 @@ describe('alerts service', () => {
         date: '2026-11-09',
       },
     ]);
+    expect(repository.listUpcomingCollaborationDeadlines).toHaveBeenCalledWith(
+      {},
+      userId,
+      '2026-11-01',
+      '2026-11-05',
+    );
     expect(repository.listOverdueDeliverables).toHaveBeenCalledWith({}, userId, '2026-11-01');
     expect(repository.listUpcomingContent).toHaveBeenCalledWith(
       {},
@@ -68,6 +93,9 @@ describe('alerts service', () => {
 
   it('sorts by severity, date, type, and record id deterministically', async () => {
     const repository = createRepository({
+      collaborations: [
+        { id: 'co1', brand_name: 'Brand', campaign_name: 'Soon', deadline: '2026-11-04' },
+      ],
       deliverables: [
         { id: 'd2', title: 'Later', due_date: '2026-11-01' },
         { id: 'd1', title: 'Earlier', due_date: '2026-10-31' },
@@ -91,7 +119,24 @@ describe('alerts service', () => {
       'deliverable:d2',
       'content:c1',
       'content:c2',
+      'collaboration:co1',
     ]);
+  });
+
+  it('deduplicates repeated rows for the same underlying event', async () => {
+    const service = createAlertsService({
+      alertsRepository: createRepository({
+        collaborations: [
+          { id: 'co1', brand_name: 'Brand', campaign_name: 'Launch', deadline: '2026-11-04' },
+          { id: 'co1', brand_name: 'Brand', campaign_name: 'Launch', deadline: '2026-11-04' },
+        ],
+      }),
+      clock: () => new Date('2026-11-02T12:00:00Z'),
+    });
+
+    const alerts = await service.list({}, userId);
+
+    expect(alerts.filter(({ id }) => id === 'collaboration:co1')).toHaveLength(1);
   });
 
   it('returns an empty list when there are no qualifying records', async () => {
