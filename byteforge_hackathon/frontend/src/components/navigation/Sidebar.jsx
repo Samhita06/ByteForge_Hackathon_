@@ -2,7 +2,7 @@ import { NavLink } from 'react-router-dom';
 import { CalendarDays, Handshake, LayoutDashboard, Settings, Sparkles, Video, Wallet } from 'lucide-react';
 
 const links = [
-  { to: '/', label: 'Dashboard', icon: LayoutDashboard },
+  { to: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
   { to: '/collaborations', label: 'Collaborations', icon: Handshake },
   { to: '/planner', label: 'Content Planner', icon: CalendarDays },
   { to: '/finance', label: 'Finance', icon: Wallet },
@@ -37,7 +37,7 @@ export function Sidebar({ collapsed = false, onNavigate }) {
           <NavLink
             key={to}
             to={to}
-            end={to === '/'}
+            end={to === '/dashboard'}
             onClick={onNavigate}
             title={collapsed ? label : undefined}
             aria-label={label}
