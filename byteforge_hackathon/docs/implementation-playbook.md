@@ -10,9 +10,22 @@
 
 1. Create a project.
 2. Authentication → Providers → Email enabled.
-3. For local/hackathon demos, disable “Confirm email” if you need immediate sign-in.
+3. In Authentication → Settings, allow new users to sign up. Keep email confirmation enabled for public/production registration.
 4. SQL editor: paste and run `supabase/migrations/202610300001_init.sql`.
 5. Copy Project URL and anon public key.
+
+### Authentication URLs
+
+In Authentication → URL Configuration:
+
+- Set the Site URL to `https://byteforge-hackathon.vercel.app`.
+- Add `https://byteforge-hackathon.vercel.app/dashboard` to the Redirect URLs allow list.
+- For local development, also add `http://localhost:5173/dashboard`.
+- Add preview-deployment URLs only if you use them, and restrict them to the required Vercel preview origins.
+
+Registration sends confirmation links back to `/dashboard`. After confirmation, users with an active session enter their own protected workspace; otherwise, they can sign in with their confirmed email and password. Supabase’s email confirmation template must retain a valid confirmation link such as `{{ .ConfirmationURL }}`.
+
+For a local-only demo that requires immediate sign-in, email confirmation can be disabled in the Supabase project’s Email provider settings. Do not disable confirmation for public production registration.
 
 Do not put the service role key in the frontend or in `VITE_*` variables.
 

@@ -38,12 +38,17 @@ export function AuthProvider({ children }) {
       },
       async signUp(email, password, displayName) {
         if (!supabase) throw new Error(configError);
-        const { error } = await supabase.auth.signUp({
+        const { data, error } = await supabase.auth.signUp({
           email,
           password,
-          options: { data: { display_name: displayName } },
+          options: {
+            data: { display_name: displayName },
+            emailRedirectTo: new URL('/dashboard', window.location.origin).toString(),
+          },
         });
         if (error) throw error;
+        if (data.session) setSession(data.session);
+        return data;
       },
       async signOut() {
         if (!supabase) return;
