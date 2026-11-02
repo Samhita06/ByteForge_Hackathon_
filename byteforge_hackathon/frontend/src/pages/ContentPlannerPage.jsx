@@ -1,5 +1,6 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useLocation, useNavigate } from 'react-router-dom';
 import {
   addMonths,
   eachDayOfInterval,
@@ -39,9 +40,15 @@ const weekDays = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 export function ContentPlannerPage() {
   const toast = useToast();
   const client = useQueryClient();
-  const [month, setMonth] = useState(() => new Date());
-  const [form, setForm] = useState(emptyForm);
-  const [editingId, setEditingId] = useState(null);
+  const location = useLocation();
+  const navigate = useNavigate();
+  const savedHandoff =
+    isSavedPlannerItem(location.state?.copilotSavedItem) ? location.state.copilotSavedItem : null;
+  const [month, setMonth] = useState(() =>
+    savedHandoff?.scheduled_date ? parseISO(savedHandoff.scheduled_date) : new Date(),
+  );
+  const [form, setForm] = useState(() => (savedHandoff ? formFromSavedPlannerItem(savedHandoff) : emptyForm));
+  const [editingId, setEditingId] = useState(() => savedHandoff?.id || null);
   const [pendingDelete, setPendingDelete] = useState(null);
   const monthKey = format(month, 'yyyy-MM');
 
@@ -80,6 +87,11 @@ export function ContentPlannerPage() {
     },
     onError: (err) => toast.push(err.message, 'error'),
   });
+
+  useEffect(() => {
+    if (!savedHandoff) return;
+    navigate(location.pathname, { replace: true, state: null });
+  }, [location.pathname, navigate, savedHandoff]);
 
   const days = useMemo(() => {
     const start = startOfWeek(startOfMonth(month), { weekStartsOn: 1 });
@@ -472,4 +484,42 @@ function PlannerSkeleton() {
       </div>
     </div>
   );
+}
+
+function isSavedPlannerItem(item) {
+  const isUuid = (value) =>
+    typeof value === 'string' &&
+    /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value);
+  const isDate = (value) => {
+    if (typeof value !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(value)) return false;
+    const parsed = parseISO(value);
+    return !Number.isNaN(parsed.getTime()) && format(parsed, 'yyyy-MM-dd') === value;
+  };
+
+  return Boolean(
+    item &&
+      typeof item === 'object' &&
+      isUuid(item.id) &&
+      typeof item.title === 'string' &&
+      item.title.trim().length > 0 &&
+      item.title.length <= 160 &&
+      ['instagram', 'youtube', 'tiktok', 'linkedin', 'other'].includes(item.platform) &&
+      ['post', 'reel', 'short', 'video', 'story', 'carousel', 'article', 'other'].includes(item.content_type) &&
+      item.status === 'idea' &&
+      (item.description === null || typeof item.description === 'string') &&
+      (item.scheduled_date === null || isDate(item.scheduled_date)) &&
+      (item.collaboration_id === null || isUuid(item.collaboration_id)),
+  );
+}
+
+function formFromSavedPlannerItem(item) {
+  return {
+    title: item.title,
+    description: item.description || '',
+    platform: item.platform,
+    content_type: item.content_type,
+    scheduled_date: item.scheduled_date || '',
+    status: item.status,
+    collaboration_id: item.collaboration_id || '',
+  };
 }

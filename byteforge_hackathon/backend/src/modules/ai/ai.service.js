@@ -3,8 +3,56 @@ import { generateWithGemini } from './gemini.client.js';
 import { buildRuleBasedRecommendations } from './ruleEngine.js';
 import { throwIfDbError } from '../../shared/utils/db.js';
 import { Errors } from '../../shared/errors/AppError.js';
+import { env } from '../../config/env.js';
 
 const buckets = new Map();
+const NETWORK_ERROR_CODES = new Set([
+  'ECONNREFUSED',
+  'ECONNRESET',
+  'EHOSTUNREACH',
+  'ENETUNREACH',
+  'ENOTFOUND',
+  'EAI_AGAIN',
+]);
+const TIMEOUT_ERROR_CODES = new Set(['ETIMEDOUT', 'ESOCKETTIMEDOUT']);
+
+export function createGeminiDiagnostic(error, configuredModel = env.GEMINI_MODEL) {
+  const status =
+    Number.isInteger(error?.status) && error.status >= 100 && error.status <= 599 ? error.status : null;
+  const errorName = typeof error?.name === 'string' ? error.name : '';
+  const errorType = typeof error?.constructor?.name === 'string' ? error.constructor.name : '';
+  const errorCode = typeof error?.code === 'string' ? error.code.toUpperCase() : '';
+
+  let category = 'other';
+  if (status !== null) {
+    category = 'provider_http';
+  } else if (
+    errorName === 'AbortError' ||
+    errorType === 'GoogleGenerativeAIAbortError' ||
+    TIMEOUT_ERROR_CODES.has(errorCode)
+  ) {
+    category = 'timeout';
+  } else if (error instanceof SyntaxError || errorType === 'SyntaxError') {
+    category = 'response_parse';
+  } else if (
+    errorName === 'TypeError' ||
+    NETWORK_ERROR_CODES.has(errorCode) ||
+    errorType === 'GoogleGenerativeAIError'
+  ) {
+    category = 'network';
+  }
+
+  const model =
+    typeof configuredModel === 'string' && /^[A-Za-z0-9][A-Za-z0-9._-]{0,99}$/.test(configuredModel)
+      ? configuredModel
+      : 'unknown';
+
+  return {
+    category,
+    ...(status === null ? {} : { status }),
+    model,
+  };
+}
 
 function allowRequest(userId) {
   const now = Date.now();
@@ -37,7 +85,7 @@ export async function createRecommendations(supabase, user) {
     warning = 'The AI provider was unavailable or over quota. Showing rule-based suggestions from saved records.';
     recommendations = buildRuleBasedRecommendations(context);
     source = 'rule-based';
-    console.error('[byteforge] gemini fallback', err.message);
+    console.error('[byteforge] gemini fallback', JSON.stringify(createGeminiDiagnostic(err)));
   }
 
   const payload = {
