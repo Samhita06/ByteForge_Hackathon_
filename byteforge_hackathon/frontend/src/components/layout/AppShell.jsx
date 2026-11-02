@@ -6,7 +6,7 @@ import { useAuth } from '../../features/auth/AuthProvider.jsx';
 import { useTheme } from '../../app/theme-context.js';
 
 const pageTitles = {
-  '/': 'Dashboard',
+  '/dashboard': 'Dashboard',
   '/collaborations': 'Collaborations',
   '/planner': 'Content Planner',
   '/finance': 'Finance',

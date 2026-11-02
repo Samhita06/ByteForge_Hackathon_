@@ -13,6 +13,13 @@ export function ProtectedRoute() {
 export function GuestRoute() {
   const { session, loading } = useAuth();
   if (loading) return <div className="p-8"><PageSkeleton /></div>;
-  if (session) return <Navigate to="/" replace />;
+  if (session) return <Navigate to="/dashboard" replace />;
+  return <Outlet />;
+}
+
+export function PublicHomeRoute() {
+  const { session, loading } = useAuth();
+  if (loading) return <div className="p-8"><PageSkeleton /></div>;
+  if (session) return <Navigate to="/dashboard" replace />;
   return <Outlet />;
 }
